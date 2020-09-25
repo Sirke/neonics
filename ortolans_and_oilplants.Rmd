@@ -9,6 +9,8 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+#Aineiston käsittely
+
 ```{r}
 #tarvittavat paketit
 paketit<-c("visreg","DHARMa","arm","performance","here","readr","tidyr","plyr","dplyr","vegan","ggplot2","lattice","psych","lme4","glmmTMB","MASS","MuMIn","mgcv","gamm4","glmmADMB")
@@ -55,7 +57,7 @@ sd(dataS$NeoPrior)
 #oikein menee
 ```
 
-
+#Aineiston tarkastelu
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(cache = TRUE)
@@ -108,6 +110,7 @@ ggplot(gd, aes(x = fyear, y = mter, group = region,color=region)) +
 sum(dataS$terri == 0) / nrow(dataS)
 ```
 
+#Mallit glmmTMB-paketilla
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(cache = TRUE)
@@ -174,7 +177,10 @@ N9=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + N
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
+```
 
+
+```{r}
 #Malli N9 on globaalimalli, joka sisältää kaiken.
 #sen summarya tutkailemalla voi huomata jo nyt, jos malli olisi ihan päin honkia.
 summary(N9)
@@ -257,6 +263,52 @@ knitr::kable(ma_coefs, digits = 2)
 
 ```
 
+
+##ennusteet
+
+```{r error=TRUE}
+##############################################################################
+#yritän tehdä ennusteita model averaged mallilla
+
+newdata <- expand.grid(NeoPrior= with(dataS, seq(min(NeoPrior), max(NeoPrior), length.out=3)),
+                       year = mean(dataS$year),
+                       Abuild = mean(dataS$Abuild),
+                       Aroad = mean(dataS$Aroad),
+                        Astream = mean(dataS$Astream),
+                        Ariver = mean(dataS$Ariver),
+                        agri5 = mean(dataS$agri5),
+                        region = levels(dataS$region),
+                        temp = mean(dataS$temp),
+                        prec = mean(dataS$prec),
+                        temp = mean(dataS$temp),
+                       Larea=mean(dataS$Larea)) #tarviiko tämän?
+
+pred.se <- predict(ave, type="link", re.form=NA,se.fit=TRUE, full=T, newdata) #ERROR: re.form not yet implemented
+newdata$fit <- pred.se$fit
+newdata$SE <- pred.se$se
+newdata$upr=newdata$fit+1.96*newdata$SE
+newdata$lwr=newdata$fit-1.96*newdata$SE
+
+#pred.se <- predict(M.avg, type="response", se.fit=TRUE, re.form=NA, full=T, newdata)
+#newdata$fit <- pred.se$fit
+#newdata$SE <- pred.se$se
+#newdata$upr=newdata$fit+1.96*newdata$SE
+#newdata$lwr=newdata$fit-1.96*newdata$SE
+
+#Note: when using glmmadmb(family="nbinom2") the use of type="response" is not possible, 
+#but type="link" is. You could take the exp() of fit, SE, lwr, and upr, afterwards in 
+#the newdata frame.
+
+# full=T defines the use of  full model-averaged coefficients see [here][1] 
+# (full=F would not work either, due to mixed models); type= "response" 
+# calculates predictions on the response scale (i.e. uses the inverse link
+# function, exp() in poisson); re.form = NA avoids the use of random factors
+# (inclusion is not possible with se.fit=TRUE).
+```
+
+Predict-funktio ei toimi glmmTMB-funktion tuottaman keskiarvoistetun malliobjektin kanssa yhteen. Täytyy kokeilla jotain toista pakettia tai funktiota mallien sovittamiseen. Tai kokeilen tehdä ennusteet käsin.
+
+##ennusteet käsin
 
 ```{r}
 #seuraavaksi ajattelin jatkaa paperin esimerkin mukaan ja käyttää model averaged mallia 
@@ -695,47 +747,9 @@ ggplot(data=ennusteet, aes(x=kasit, y=enn)) +
                 position=position_dodge(.9))
 ```
 
+Käsin laskettaessa ennusteet pystyy laskemaan conditional average -estimaateilla (predict funktiolla on pakko käyttää full average -estimaatteja). Käsin laskiessa ennusteissa ei huomioida offsettia. Predict funktio ynnää ennusteeseen myös offsetin (jos se on mallissa mukana offset-muuttujana, ei määreenä). Käsin en osaa laskea kuin nuo esimerkin ohjeistamat yksittäisen ennusteen luottamusvälit (prediction intervals for individual values of Y). Yleensä varmaan ilmoitetaan ennemmin luottamusväli ennusteen keskiarvolle (confidence interval for the mean of Y). Mitenkähän se lasketaan käsin? se*t-jakauma?
 
-```{r}
-##############################################################################
-#yritän tehdä ennusteita model averaged mallilla
-
-newdata <- expand.grid(NeoPrior= with(dataS, seq(min(NeoPrior), max(NeoPrior), length.out=3)),
-                       year = mean(dataS$year),
-                       Abuild = mean(dataS$Abuild),
-                       Aroad = mean(dataS$Aroad),
-                        Astream = mean(dataS$Astream),
-                        Ariver = mean(dataS$Ariver),
-                        agri5 = mean(dataS$agri5),
-                        region = levels(dataS$region),
-                        temp = mean(dataS$temp),
-                        prec = mean(dataS$prec),
-                        temp = mean(dataS$temp),
-                       Larea=mean(dataS$Larea)) #tarviiko tämän?
-
-pred.se <- predict(ave, type="link", re.form=NA,se.fit=TRUE, full=T, newdata) #ERROR: re.form not yet implemented
-newdata$fit <- pred.se$fit
-newdata$SE <- pred.se$se
-newdata$upr=newdata$fit+1.96*newdata$SE
-newdata$lwr=newdata$fit-1.96*newdata$SE
-
-#pred.se <- predict(M.avg, type="response", se.fit=TRUE, re.form=NA, full=T, newdata)
-#newdata$fit <- pred.se$fit
-#newdata$SE <- pred.se$se
-#newdata$upr=newdata$fit+1.96*newdata$SE
-#newdata$lwr=newdata$fit-1.96*newdata$SE
-
-#Note: when using glmmadmb(family="nbinom2") the use of type="response" is not possible, 
-#but type="link" is. You could take the exp() of fit, SE, lwr, and upr, afterwards in 
-#the newdata frame.
-
-# full=T defines the use of  full model-averaged coefficients see [here][1] 
-# (full=F would not work either, due to mixed models); type= "response" 
-# calculates predictions on the response scale (i.e. uses the inverse link
-# function, exp() in poisson); re.form = NA avoids the use of random factors
-# (inclusion is not possible with se.fit=TRUE).
-```
-
+#Mallit glmmADMB-paketilla
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(cache = TRUE)
@@ -795,7 +809,10 @@ N9=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
+```
 
+
+```{r}
 #Malli N9 on globaalimalli, joka sisältää kaiken.
 #sen summarya tutkailemalla voi huomata jo nyt, jos malli olisi ihan päin honkia.
 summary(N9)
@@ -826,7 +843,11 @@ ma_coefs <- mutate(ma_coefs,
                    lower95 = Estimate - 1.96 * `Std. Error`,
                    upper95 = Estimate + 1.96 * `Std. Error`) %>% select(coefficient, Estimate, `Std. Error`, t, p, lower95, upper95)
 knitr::kable(ma_coefs, digits = 2)
+```
 
+## ennusteet
+
+```{r}
 #predictions
 newdata <- expand.grid(NeoPrior= with(dataS, seq(min(NeoPrior), max(NeoPrior), length.out=3)),
                        year = mean(dataS$year),
@@ -860,6 +881,8 @@ print(p1)
 
 ```
 
+
+#Mallit ilman interaktioita
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(cache = TRUE)
@@ -927,7 +950,10 @@ N9=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + N
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
+```
 
+
+```{r}
 #globaalimalli
 summary(N9)
 
@@ -962,13 +988,11 @@ knitr::kable(ma_coefs, digits = 2)
 #Mutta edelleen year, river, agri5, region, NeoPrior ja temp ovat ainoita muuttujia, joilla luottamusvälin sisään 
 #ei mahdu nollaa eli ovat vaikutukseltaan jonkun suuntaisia edes.
 
-#mietin, pitäisikö mallia käyttää jonkin piste-estimaatin ennustamiseen? Kuten paperissa. Reviirien määrä isolle 
-#ja pienelle NeoPrior-osuudelle?
-
-summary(data$NeoPrior)
-sd(data$NeoPrior)
+#tässä voisi testata saanko samanlaiset ennusteet..
 ```
 
+
+#Zuurin esimerkin mukaisesti
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(cache = TRUE)
@@ -1042,8 +1066,7 @@ summary(T1)
 plot(T1)
 #vuoden residuaaleissa taitaa olla kuvio?
 
-
-#vaihdetaan NB
+#vaihdetaan NB-jakaumaan
 ZNeg=glmer(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + temp*year + prec*year + open*year + shanG*year  
             + offset(Larea) 
             + (1 + year| id), 
@@ -1063,13 +1086,6 @@ N  <- nrow(dataS)
 p  <- length(fixef(ZNeg)) + 2 + 1  #2 sigmas and 1 size/k/theta NB parameter (en taas olisi tästä niin varma)
 sum(E2^2) / (N - p)
 #Hmm.. underdispersion vain paheni?!
-
-#nää ei toimi NB-malleille
-#check_overdispersion(ZNeg)
-
-#DHARMa-paketin kuvaajia mallin validointiin
-#simulateOutput=simulateResiduals(fittedModel = ZNeg)
-#plot(simulateOutput)
 
 # Check for overdispersion
 E2 <- resid(ZNeg_TMB, type = "pearson")
@@ -1342,7 +1358,7 @@ plot(T1)
 ```
 
 
-```{r}
+```{r error=TRUE}
 ####################################################################
 #PREDICTIONS
 
