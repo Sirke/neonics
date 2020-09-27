@@ -5,17 +5,20 @@ date: "25 syyskuuta 2020"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
 ```
 
 #Aineiston käsittely
 
-```{r}
+```{r, echo = T, results = 'hide', warning=FALSE, message=FALSE}
 #tarvittavat paketit
 paketit<-c("visreg","DHARMa","arm","performance","here","readr","tidyr","plyr","dplyr","vegan","ggplot2","lattice","psych","lme4","glmmTMB","MASS","MuMIn","mgcv","gamm4","glmmADMB")
 lapply(paketit,library,character.only=T)
+```
 
+
+```{r}
 #aineisto
 reg<-read.csv("ortolans.csv")
 data<-read.csv("OrtolanBunting.csv")
@@ -59,9 +62,7 @@ sd(dataS$NeoPrior)
 
 #Aineiston tarkastelu
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
-
+```{r, cache=TRUE}
 #tarkastellaan aineiston riippuvuussuhteita
 pairs.panels(dataS[,c("terri","year","NeoPrior","agri5","shanG","open","region","prec","temp")],cex=4)
 ggplot(dataS, aes(x=year,y=terri))+ geom_point() + geom_smooth()
@@ -112,8 +113,7 @@ sum(dataS$terri == 0) / nrow(dataS)
 
 #Mallit glmmTMB-paketilla
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+```{r, cache=TRUE}
 #mallit
 N1=glmmTMB(terri ~ year
            + offset(Larea) 
@@ -751,8 +751,8 @@ Käsin laskettaessa ennusteet pystyy laskemaan conditional average -estimaateill
 
 #Mallit glmmADMB-paketilla
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+```{r, cache=TRUE}
+
 ###########################################################################
 #mallit glmmadmb-funktiolla
 #mallit
@@ -884,8 +884,7 @@ print(p1)
 
 #Mallit ilman interaktioita
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+```{r, cache=TRUE}
 ##############################################################################################################################
 #mallit ilman interaktioita
 N1=glmmTMB(terri ~ year
@@ -994,8 +993,8 @@ knitr::kable(ma_coefs, digits = 2)
 
 #Zuurin esimerkin mukaisesti
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+```{r}
+
 #################################################################################################################
 
 #Zuurin esimerkin mukaan analyysi menisi näin
@@ -1152,7 +1151,9 @@ plot(T1)
 
 AIC(ZPois,ZNeg_TMB)
 #NB-malli näyttäisi olevan kuitenkin parempi, ainakin näin AIC arvoilla vertailtuna
+```
 
+```{r, cache=TRUE}
 # Is everything important?
 
 Z1=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + temp*year + prec*year+ open*year + shanG*year  
@@ -1279,6 +1280,11 @@ Z18=glmmTMB(terri ~ Ariver + agri5 + region + NeoPrior + temp
             data=dataS)
 anova(Z17,Z18)
 
+```
+
+
+
+```{r}
 ZF=glmmTMB(terri ~ year + Ariver + agri5 + region + NeoPrior + temp 
             + offset(Larea) 
             + (1 + year| id), 
@@ -1358,6 +1364,7 @@ plot(T1)
 ```
 
 
+
 ```{r error=TRUE}
 ####################################################################
 #PREDICTIONS
@@ -1428,8 +1435,8 @@ p
 ```
 
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+```{r}
+
 #####################################################
 # Simulation
 

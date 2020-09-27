@@ -1,0 +1,176 @@
+---
+title: "fyy"
+author: "Sirke"
+date: "25 syyskuuta 2020"
+output: html_document
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(cache = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+#Aineiston käsittely
+
+```{r, echo = T, results = 'hide', warning=FALSE, message=FALSE}
+
+#tarvittavat paketit
+paketit<-c("visreg","DHARMa","arm","performance","here","readr","tidyr","plyr","dplyr","vegan","ggplot2","lattice","psych","lme4","glmmTMB","MASS","MuMIn","mgcv","gamm4","glmmADMB")
+lapply(paketit,library,character.only=T)
+```
+
+
+
+```{r}
+#aineisto
+reg<-read.csv("ortolans.csv")
+data<-read.csv("OrtolanBunting.csv")
+
+#yhdistetään näistä region muuttuja mukaan aineistoon
+data$region<-with(reg, region[match(data$id, id)])
+
+names(data)
+str(data)
+summary(data)
+
+#tarkasta kaikkien luokkien muoto
+data$id<-as.factor(data$id)
+#vuodelle oma faktori-muuttuja
+data$fyear<-as.factor(data$year)
+
+#valitaan aineisto vain vuodesta 2001 eteenpäin, NeoPrior-tietoa ei ole vuodelle 2000
+data=subset(data,year!=2000)
+
+#valitaan Pohjois-Karjala ja Keski-Suomi pois
+data=subset(data,region!="PKA"&region!="KES")
+data=droplevels(data)
+
+#logaritmimuunnos pinta-alalle, luo uusi muuttuja
+data$Larea=log(data$area)
+
+#standardoi muuttujat uuteen data frameen niin edellisestä voi vielä tarkistaa
+#mean on nolla ja sd on 0.5, Grueberin paperista otettu ohje
+#area-muuttujaa eli pinta-alaa ei standardoida, niinkuin ei myöskään terri-muuttujaa 
+#mä siis standardoin vuoden, toivottavasti se on ok?
+dataS=data %>%mutate_at(c(2:3,5:7,9:21), funs(c(scale(.)*0.5))) #ei ehkä välttämätön tämä *0.5?
+
+#tarkastan pari muuttujaa
+mean(dataS$Ariver)
+sd(dataS$Aroad)
+
+mean(dataS$NeoPrior)
+sd(dataS$NeoPrior)
+#oikein menee
+```
+
+
+
+```{r, cache=TRUE}
+#mallit
+N1=glmmTMB(terri ~ year
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE)
+
+N2=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE) 
+
+N3=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year 
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE)
+
+N4=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region  + temp*year + prec*year  
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE)
+
+N5=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG*year + open*year  
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE)
+
+N6=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + shanG*year + open*year  
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE)
+
+N7=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + temp*year + prec*year  
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE)
+
+N8=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG*year + open*year + temp*year + prec*year  
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE)
+
+N9=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + shanG*year + open*year + temp*year + prec*year  
+           + offset(Larea) 
+           + (1 + year| id), 
+           family=nbinom2, 
+           data=dataS, 
+           REML=FALSE)
+```
+
+```{r}
+#Malli N9 on globaalimalli, joka sisältää kaiken.
+#sen summarya tutkailemalla voi huomata jo nyt, jos malli olisi ihan päin honkia.
+summary(N9)
+
+#tarkistetaan ettei globaalimalli ole ylidispersoitunut
+E2 <- resid(N9, type = "pearson")
+N  <- nrow(dataS)
+p  <- length(fixef(N9)$con) + 3  #2 sigmas and 1 size/k/theta NB parameter
+sum(E2^2) / (N - p)
+#globaalimalli on hieman alidispersoitunut, 0.74, onko tämä ongelma?
+
+#How good is the model performing?
+F9 <- fitted(N9)
+par(mfrow = c(1,1), cex.lab = 1.5, mar = c(5,5,2,2))
+plot(x = dataS$terri,
+     y = F9,
+     xlab = "Fitted values (with re)",
+     ylab = "Number of territories",
+     xlim = c(0,15),
+     ylim = c(0,15))
+abline(h = 0, lty = 2) 
+cor(dataS$terri, F9)
+
+
+#rankataan kaikki mallit niiden AICc arvoon perustuen. Mitä pienempi arvo sen parempi.
+#AICc arvo arvioi mallien laadukkuutta suhteessa toisiinsa, se ei sinänsä kerro mitään siitä, onko yksikään malleista sopiva
+#tutkijan on etukäteen pitänyt miettiä, että näissä malleissa on järkeä
+output1<-model.sel(N1,N2,N3,N4,N5,N6,N7,N8,N9)
+output1
+```
