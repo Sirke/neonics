@@ -3,11 +3,16 @@ title: "Ortolans and oilplants"
 author: "Sirke"
 date: "25 syyskuuta 2020"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
-```{r setup, include = FALSE}
-knitr::opts_chunk$set(cache = TRUE)
+#Öljykasvien viljelyn yhteys peltosirkkureviireihin
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
 ```
+
 
 #Aineiston käsittely
 
@@ -62,7 +67,7 @@ sd(dataS$NeoPrior)
 
 #Aineiston tarkastelu
 
-```{r, cache=TRUE}
+```{r}
 #tarkastellaan aineiston riippuvuussuhteita
 pairs.panels(dataS[,c("terri","year","NeoPrior","agri5","shanG","open","region","prec","temp")],cex=4)
 ggplot(dataS, aes(x=year,y=terri))+ geom_point() + geom_smooth()
@@ -113,7 +118,7 @@ sum(dataS$terri == 0) / nrow(dataS)
 
 #Mallit glmmTMB-paketilla
 
-```{r, cache=TRUE}
+```{r, cache=T}
 #mallit
 N1=glmmTMB(terri ~ year
            + offset(Larea) 
@@ -179,6 +184,7 @@ N9=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + N
            REML=FALSE)
 ```
 
+Vertaillaan malleja.
 
 ```{r}
 #Malli N9 on globaalimalli, joka sisältää kaiken.
@@ -261,16 +267,41 @@ ma_coefs <- mutate(ma_coefs,
                    upper95 = Estimate + 1.96 * `Std. Error`) %>% select(coefficient, Estimate, `Std. Error`, t, p, lower95, upper95)
 knitr::kable(ma_coefs, digits = 2)
 
+coef=ma_coefs
+coef$coefficient=factor(coef$coefficient)
+coef$signi=factor(ifelse(coef$p >= 0.05 , 'N', 'Y'))
+```
+
+Piirrän kuvaajia regressiokertoimista ja niiden luottamusvälit
+
+Regressiokertoimet ja niiden SE:t
+
+```{r}
+ggplot(data= coef, aes(coefficient, Estimate,group=signi)) +
+  geom_point(aes(shape=signi), size=2) + scale_shape_manual(values=c(1,16)) + 
+  geom_errorbar(data = coef, aes(coefficient, Estimate, ymin=Estimate - `Std. Error`, ymax = Estimate + `Std. Error`), width=0.2) + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  geom_hline(yintercept=0,linetype="dashed")
+```
+
+Regressiokertoimet ja niiden 95% luottamusvälit
+
+```{r}
+ggplot(data= coef, aes(coefficient, Estimate,group=signi)) +
+  geom_point(aes(shape=signi), size=2) + scale_shape_manual(values=c(1,16)) + 
+  geom_errorbar(data = coef, aes(coefficient, Estimate, ymin=lower95, ymax = upper95), width=0.2) + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  geom_hline(yintercept=0,linetype="dashed")
 ```
 
 
-##ennusteet
+##ennusteet predict-funktiolla
 
 ```{r error=TRUE}
 ##############################################################################
 #yritän tehdä ennusteita model averaged mallilla
 
-newdata <- expand.grid(NeoPrior= with(dataS, seq(min(NeoPrior), max(NeoPrior), length.out=3)),
+newdata <- expand.grid(NeoPrior= with(dataS, seq(0.1, 0.9, length.out=3)),
                        year = mean(dataS$year),
                        Abuild = mean(dataS$Abuild),
                        Aroad = mean(dataS$Aroad),
@@ -284,36 +315,17 @@ newdata <- expand.grid(NeoPrior= with(dataS, seq(min(NeoPrior), max(NeoPrior), l
                        Larea=mean(dataS$Larea)) #tarviiko tämän?
 
 pred.se <- predict(ave, type="link", re.form=NA,se.fit=TRUE, full=T, newdata) #ERROR: re.form not yet implemented
-newdata$fit <- pred.se$fit
-newdata$SE <- pred.se$se
-newdata$upr=newdata$fit+1.96*newdata$SE
-newdata$lwr=newdata$fit-1.96*newdata$SE
-
-#pred.se <- predict(M.avg, type="response", se.fit=TRUE, re.form=NA, full=T, newdata)
-#newdata$fit <- pred.se$fit
-#newdata$SE <- pred.se$se
-#newdata$upr=newdata$fit+1.96*newdata$SE
-#newdata$lwr=newdata$fit-1.96*newdata$SE
-
-#Note: when using glmmadmb(family="nbinom2") the use of type="response" is not possible, 
-#but type="link" is. You could take the exp() of fit, SE, lwr, and upr, afterwards in 
-#the newdata frame.
-
-# full=T defines the use of  full model-averaged coefficients see [here][1] 
-# (full=F would not work either, due to mixed models); type= "response" 
-# calculates predictions on the response scale (i.e. uses the inverse link
-# function, exp() in poisson); re.form = NA avoids the use of random factors
-# (inclusion is not possible with se.fit=TRUE).
 ```
 
 Predict-funktio ei toimi glmmTMB-funktion tuottaman keskiarvoistetun malliobjektin kanssa yhteen. Täytyy kokeilla jotain toista pakettia tai funktiota mallien sovittamiseen. Tai kokeilen tehdä ennusteet käsin.
 
 ##ennusteet käsin
 
+Seuraan esimerkkiä tästä [paperista](https://onlinelibrary.wiley.com/doi/full/10.1111/j.1420-9101.2010.02210.x).
+
 ```{r}
 #seuraavaksi ajattelin jatkaa paperin esimerkin mukaan ja käyttää model averaged mallia 
-#piste-ennusteiden tekemiseen mutta mua häiritsee malliin päätyneet merkityksettömät interaktiot
-#kokeilen myöhemmin tehdä samat mallit uudelleen ilman interaktioita
+#piste-ennusteiden tekemiseen 
 
 #Lasken kullekin alueelle ennustetut reviirimäärät kun NeoPrior-arvot ovat 0.1, 0.5 tai 0.9
 
@@ -460,8 +472,11 @@ region=rep(c("ETH","UUS","POH","LOU"),times=3)
 region
 predictions=data.frame(preds,treat,region)
 predictions
+```
 
-#################################################
+###Luottamusvälit ennusteille
+
+```{r}
 #luottamusvälien laskeminen
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=0;NeoPrior=0.1
@@ -731,125 +746,165 @@ yla95
 #taulukoksi kaikkien alueiden ylittävät ennusteet
 ennus=cbind(ennusteet,ala95,yla95)
 ennus
+```
+
+### Kuvaajat ennusteille luottamusväleineen
+
+```{r}
+predictions$treat <- factor(predictions$treat, levels = c('low', 'med', 'high'))
+
+predictions$region <- factor(predictions$region, levels = c('POH', 'LOU', 'UUS', 'ETH'))
 
 #kuvaajat
 # Stacked barplot with multiple groups
 ggplot(data=predictions, aes(x=treat, y=preds, fill=region)) +
   geom_bar(stat="identity", position=position_dodge()) +
   geom_errorbar(aes(ymin=lower95, ymax=upper95), width=.1,
-                position=position_dodge(.9))
+                position=position_dodge(.9))+labs(title="ennustettu reviirien määrä kullakin tutkimusalueella", x = "öljykasvien osuus", y = "ennustettu reviirien määrä")
 
+ennusteet$kasit <- factor(ennusteet$kasit, levels = c('low', 'med', 'high'))
 
 ##kaikki alueet
 ggplot(data=ennusteet, aes(x=kasit, y=enn)) +
   geom_bar(stat="identity", position=position_dodge()) +
   geom_errorbar(aes(ymin=ala95, ymax=yla95), width=.2,
-                position=position_dodge(.9))
+                position=position_dodge(.9))+labs(title="ennustettu reviirien määrä, kaikki tutkimusalueet", x = "öljykasvien osuus", y = "ennustettu reviirien määrä")
 ```
 
-Käsin laskettaessa ennusteet pystyy laskemaan conditional average -estimaateilla (predict funktiolla on pakko käyttää full average -estimaatteja). Käsin laskiessa ennusteissa ei huomioida offsettia. Predict funktio ynnää ennusteeseen myös offsetin (jos se on mallissa mukana offset-muuttujana, ei määreenä). Käsin en osaa laskea kuin nuo esimerkin ohjeistamat yksittäisen ennusteen luottamusvälit (prediction intervals for individual values of Y). Yleensä varmaan ilmoitetaan ennemmin luottamusväli ennusteen keskiarvolle (confidence interval for the mean of Y). Mitenkähän se lasketaan käsin? se*t-jakauma?
+
+HUOM!
+
+*Käsin laskettaessa ennusteet pystyy laskemaan conditional average -estimaateilla (predict funktiolla on pakko käyttää full average -estimaatteja).  
+
+*Käsin laskiessa ennusteissa ei huomioida offsettia. Predict-funktio ynnää ennusteeseen myös offsetin (jos se on mallissa mukana offset-muuttujana, ei määreenä).  
+
+*Käsin en osaa laskea kuin nuo esimerkin ohjeistamat yksittäisen ennusteen luottamusvälit(prediction intervals for individual values of Y). Yleensä varmaan ilmoitetaan ennemmin luottamusväli ennusteen keskiarvolle (confidence interval for the mean of Y). Mitenkähän se lasketaan käsin?  
+
 
 #Mallit glmmADMB-paketilla
 
-```{r, cache=TRUE}
-
-###########################################################################
+```{r, cache=T}
 #mallit glmmadmb-funktiolla
-#mallit
-N1=glmmadmb(terri ~ year
+M1=glmmadmb(terri ~ year
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
 
-N2=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region
+M2=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS) 
 
-N3=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year 
+M3=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year 
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
 
-N4=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region  + temp*year + prec*year  
+M4=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region  + temp*year + prec*year  
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
 
-N5=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG*year + open*year  
+M5=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG*year + open*year  
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
 
-N6=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + shanG*year + open*year  
+M6=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + shanG*year + open*year  
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
 
-N7=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + temp*year + prec*year  
+M7=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + temp*year + prec*year  
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
 
-N8=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG*year + open*year + temp*year + prec*year  
+M8=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG*year + open*year + temp*year + prec*year  
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
 
-N9=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + shanG*year + open*year + temp*year + prec*year  
+M9=glmmadmb(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + shanG*year + open*year + temp*year + prec*year  
            + offset(Larea) 
            + (1 + year| id), 
            family="nbinom2", 
            data=dataS)
 ```
 
+Parhaimman mallit etsintä
 
 ```{r}
-#Malli N9 on globaalimalli, joka sisältää kaiken.
+#Malli M9 on globaalimalli, joka sisältää kaiken.
 #sen summarya tutkailemalla voi huomata jo nyt, jos malli olisi ihan päin honkia.
-summary(N9)
+summary(M9)
 
-output1<-model.sel(N1,N2,N3,N4,N5,N6,N7,N8,N9)
-output1
+output<-model.sel(M1,M2,M3,M4,M5,M6,M7,M8,M9)
+output
 
-knitr::kable(output1, digits = 2)
+AIC(M1,M2,M3,M4,M5,M6,M7,M8,M9)
 
-AIC(N1,N2,N3,N4,N5,N6,N7,N8,N9)
+topmodels = get.models(output,cumsum(weight)<=0.95)
 
-topmodels = get.models(output1,cumsum(weight)<=0.95)
+aver=model.avg(topmodels, revised.var = TRUE, fit=TRUE)
+summary(aver)
 
-ave=model.avg(topmodels, revised.var = TRUE, fit=TRUE)
-summary(ave)
-
-coef(ave)
-confint(ave)
+coef(aver)
+confint(aver)
 
 #taulukkoa taas yritän tehdä..
-ma_coefs <- coefTable(ave, full=T, adjust.se = TRUE)
-coefnames <- row.names(ma_coefs)
-ma_coefs <- as.data.frame(ma_coefs)
-ma_coefs <- mutate(ma_coefs,
+m_coefs <- coefTable(aver, full=F, adjust.se = TRUE) #full=T tarkoittaa, että estimaatit on arvioitu full average menetelmällä vs. conditional average, joita käytin käsintehdyissä ennusteissa. 'SE' on tässä nimenomaan adjusted SE.
+coefnames <- row.names(m_coefs)
+m_coefs <- as.data.frame(m_coefs)
+m_coefs <- mutate(m_coefs,
                    coefficient = coefnames,
                    t = Estimate / `Std. Error`,
                    p = pt(abs(t), df = 1397, lower.tail = FALSE), #en tiedä onko df oikein. Mutta sen muuttaminen ei muuta tuloksia?!
                    lower95 = Estimate - 1.96 * `Std. Error`,
                    upper95 = Estimate + 1.96 * `Std. Error`) %>% select(coefficient, Estimate, `Std. Error`, t, p, lower95, upper95)
-knitr::kable(ma_coefs, digits = 2)
+knitr::kable(m_coefs, digits = 2)
+
+coefs=m_coefs
+coefs$coefficient=factor(coefs$coefficient)
+coefs$signi=factor(ifelse(coefs$p >= 0.03 , 'N', 'Y'))
+knitr::kable(coefs, digits = 2)
 ```
 
-## ennusteet
+Piirrän kuvaajia regressiokertoimista ja niiden luottamusvälit. Nämä lasketaaan nyt siis conditional average estimaateilla.
+
+Regressiokertoimet ja niiden SE:t
+
+```{r}
+ggplot(data= coefs, aes(coefficient, Estimate,group=signi)) +
+  geom_point(aes(shape=signi), size=2) + scale_shape_manual(values=c(1,16)) + 
+  geom_errorbar(data = coefs, aes(coefficient, Estimate, ymin=Estimate - `Std. Error`, ymax = Estimate + `Std. Error`), width=0.2) + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  geom_hline(yintercept=0,linetype="dashed")
+```
+
+Regressiokertoimet ja 95% luottamusvälit
+
+```{r}
+ggplot(data= coefs, aes(coefficient, Estimate,group=signi)) +
+  geom_point(aes(shape=signi), size=2) + scale_shape_manual(values=c(1,16)) + 
+  geom_errorbar(data = coefs, aes(coefficient, Estimate, ymin=lower95, ymax = upper95), width=0.2) + 
+  theme(axis.text.x = element_text(angle = 90)) + 
+  geom_hline(yintercept=0,linetype="dashed")
+```
+
+## ennusteet predict-funktiolla
 
 ```{r}
 #predictions
-newdata <- expand.grid(NeoPrior= with(dataS, seq(min(NeoPrior), max(NeoPrior), length.out=3)),
+newdata <- expand.grid(NeoPrior= with(dataS, seq(0.1, 0.9, length.out=3)),
                        year = mean(dataS$year),
                        Abuild = mean(dataS$Abuild),
                        Aroad = mean(dataS$Aroad),
@@ -861,8 +916,9 @@ newdata <- expand.grid(NeoPrior= with(dataS, seq(min(NeoPrior), max(NeoPrior), l
                        prec = mean(dataS$prec),
                        Larea=mean(dataS$Larea)) #näissä ennusteissa on mukana pinta-ala offsetti, vrt. käsintehtyihin ennusteisiin
 
-pred.se <- predict(ave, type="link", re.form=NA,se.fit=TRUE, full=T, newdata) 
-#nämä ennusteet tehdään nyt full averaged eikä conditional arvoista.Varmaan sen takia hieman erilaiset?
+pred.se <- predict(aver, type="link", re.form=NA,se.fit=TRUE, full=T, newdata) 
+#nämä ennusteet lasketaan nyt full averaged eikä conditional arvoista. Varmaan sen takia tulokset hieman erilaiset?
+
 newdata$fit <- pred.se$fit
 newdata$SE <- pred.se$se
 newdata$upr=newdata$fit+1.96*newdata$SE
@@ -872,78 +928,92 @@ newdata$fitX <-exp(newdata$fit)
 newdata$SEX<-exp(newdata$SE)
 newdata$uprX=exp(newdata$upr)
 newdata$lwrX=  exp(newdata$lwr)
-  
+``` 
 
-p1 <- ggplot(newdata, aes(x=NeoPrior, y=fitX, fill=region)) +
+## Kuvaaja ennusteille + luottamusvälit
+
+```{r}
+newdata$region <- factor(newdata$region, levels = c('POH', 'UUS', 'LOU', 'ETH'))
+newdata$NeoPrior=as.character(newdata$NeoPrior)
+newdata$NeoPrior=revalue(newdata$NeoPrior,c("0.1"="low","0.5"="med","0.9"="high"))
+newdata$NeoPrior <- factor(newdata$NeoPrior, levels = c('low', 'med', 'high'))
+
+ggplot(newdata, aes(x=NeoPrior, y=fitX, fill=region)) +
   geom_bar(stat="identity", position=position_dodge()) +
-  geom_errorbar(aes(ymin=lwrX, ymax=uprX), width=.1, position=position_dodge(2.0))
-print(p1)
-
+  geom_errorbar(aes(ymin=lwrX, ymax=uprX), width=.1, position=position_dodge(0.9))+labs(title="ennustettu reviirien määrä", x = "öljykasvien osuus", y = "ennustettu reviirien määrä")
 ```
+
+HUOM!
+
+Predict-funktio laskee ennusteet hieman erilailla kuin käsin laskettaessa. Katso funktiosta lisää (täältä)[https://rdrr.io/cran/MuMIn/man/predict.averaging.html]. Funktio käyttää full average estimaatteja ja laskee ennusteet jokaisesta jatkoon valitusta mallista erikseen. Tällöin NeoPrior saa arvon nolla joissain malleissa (missä se ei siis esiinny muuttujana ja on täten vähän pienempi vaikutukseltaan).
+
+Ennusteet lasketaan siis eri estimaateilla kuin mille aiemmin piirsin kuvaajia ja joihin perustan arvioni muuttujien merkityksestä. Onko tässä suuri ristiriita? Ongelma ratkeaisi, jos predict-funktio osaisi tehdä ennusteita conditional average estimaateista.
+
+
+Loppupäätelmäni: valitsisin käsintehdyt ennusteet. Ainoa asia, joka niissä pohdituttaa on tuo 95 % luottamusvälien laveus ja offsetin puuttuminen. Osaan laskea käsintehdyille ennusteille vain yksittäisen ennusteen luottamusvälit, en ennusteen keskiarvon luottamusväliä. Pinta-alan vaikutus ei ole mukana ennusteissa.
 
 
 #Mallit ilman interaktioita
 
-```{r, cache=TRUE}
-##############################################################################################################################
+```{r, cache=T}
 #mallit ilman interaktioita
-N1=glmmTMB(terri ~ year
+I1=glmmTMB(terri ~ year
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
 
-N2=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region
+I2=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
            data=dataS, 
            REML=FALSE) 
 
-N3=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior 
+I3=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior 
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
 
-N4=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region  + temp + prec
+I4=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region  + temp + prec
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
 
-N5=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG + open  
+I5=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG + open  
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
 
-N6=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior + shanG + open  
+I6=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior + shanG + open  
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
 
-N7=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior + temp + prec  
+I7=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior + temp + prec  
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
 
-N8=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG + open + temp + prec  
+I8=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + shanG + open + temp + prec  
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
            data=dataS, 
            REML=FALSE)
 
-N9=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior + shanG + open + temp + prec  
+I9=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior + shanG + open + temp + prec  
            + offset(Larea) 
            + (1 + year| id), 
            family=nbinom2, 
@@ -954,10 +1024,10 @@ N9=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + N
 
 ```{r}
 #globaalimalli
-summary(N9)
+summary(I9)
 
 #ranking
-output1<-model.sel(N1,N2,N3,N4,N5,N6,N7,N8,N9)
+output1<-model.sel(I1,I2,I3,I4,I5,I6,I7,I8,I9)
 output1
 
 #topmodels, kokeilenkin 4 deltaAICc
@@ -993,7 +1063,7 @@ knitr::kable(ma_coefs, digits = 2)
 
 #Zuurin esimerkin mukaisesti
 
-```{r}
+```{r, cache=T}
 
 #################################################################################################################
 
@@ -1153,7 +1223,7 @@ AIC(ZPois,ZNeg_TMB)
 #NB-malli näyttäisi olevan kuitenkin parempi, ainakin näin AIC arvoilla vertailtuna
 ```
 
-```{r, cache=TRUE}
+```{r, cache=T}
 # Is everything important?
 
 Z1=glmmTMB(terri ~ year + Abuild + Aroad + Astream + Ariver + agri5 + region + NeoPrior*year + temp*year + prec*year+ open*year + shanG*year  
@@ -1284,7 +1354,7 @@ anova(Z17,Z18)
 
 
 
-```{r}
+```{r, cache=T}
 ZF=glmmTMB(terri ~ year + Ariver + agri5 + region + NeoPrior + temp 
             + offset(Larea) 
             + (1 + year| id), 
@@ -1435,7 +1505,7 @@ p
 ```
 
 
-```{r}
+```{r, cache=T}
 
 #####################################################
 # Simulation
