@@ -269,7 +269,7 @@ knitr::kable(ma_coefs, digits = 2)
 
 coef=ma_coefs
 coef$coefficient=factor(coef$coefficient)
-coef$signi=factor(ifelse(coef$p >= 0.05 , 'N', 'Y'))
+coef$signi=factor(ifelse(coef$p >= 0.035 , 'N', 'Y'))
 ```
 
 Piirrän kuvaajia regressiokertoimista ja niiden luottamusvälit
@@ -890,6 +890,9 @@ ggplot(data= coefs, aes(coefficient, Estimate,group=signi)) +
   geom_hline(yintercept=0,linetype="dashed")
 ```
 
+SE:t kertovat kuinka kauas oikeasta populaation keskiarvosta sun otoksien keskiarvot sijoittuvat. Kertoo siis otosvirheestä (vaihtelusta mitä otokset sisältävät, otoskoko vaikuttaa).
+
+
 Regressiokertoimet ja 95% luottamusvälit
 
 ```{r}
@@ -899,6 +902,8 @@ ggplot(data= coefs, aes(coefficient, Estimate,group=signi)) +
   theme(axis.text.x = element_text(angle = 90)) + 
   geom_hline(yintercept=0,linetype="dashed")
 ```
+
+95 % luottamusväli kertoo 
 
 ## ennusteet predict-funktiolla
 
