@@ -49,12 +49,14 @@ data=droplevels(data)
 
 #logaritmimuunnos pinta-alalle, luo uusi muuttuja
 data$Larea=log(data$area)
-
+mean(data$Larea)
 #standardoi muuttujat uuteen data frameen niin edellisestä voi vielä tarkistaa
 #mean on nolla ja sd on 0.5, Grueberin paperista otettu ohje
 #area-muuttujaa eli pinta-alaa ei standardoida, niinkuin ei myöskään terri-muuttujaa 
 #mä siis standardoin vuoden, toivottavasti se on ok?
 dataS=data %>%mutate_at(c(2:3,5:7,9:21), funs(c(scale(.)*0.5))) #ei ehkä välttämätön tämä *0.5?
+dataP=data %>%mutate_at(c(2:3,5:7,9:21), funs(c(scale(.))))
+
 
 #tarkastan pari muuttujaa
 mean(dataS$Ariver)
@@ -333,7 +335,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 
 TerriETHlow= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriETHlow
 a=exp(TerriETHlow)
 
@@ -341,7 +343,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 
 TerriUUSlow= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriUUSlow
 b=exp(TerriUUSlow)
 
@@ -349,7 +351,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS
 
 TerriPOHlow= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriPOHlow
 c=exp(TerriPOHlow)
 
@@ -357,7 +359,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS
 
 TerriLOUlow= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriLOUlow
 d=exp(TerriLOUlow)
 
@@ -370,8 +372,7 @@ NeoPrior0.1
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=0;NeoPrior=0.5
 
 TerriETHmed= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
-  1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 0.15*prec*year + mean(dataS$Larea)
 TerriETHmed
 a=exp(TerriETHmed)
 
@@ -379,7 +380,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 
 TerriUUSmed= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriUUSmed
 b=exp(TerriUUSmed)
 
@@ -387,7 +388,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS
 
 TerriPOHmed= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriPOHmed
 c=exp(TerriPOHmed)
 
@@ -395,7 +396,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS
 
 TerriLOUmed= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriLOUmed
 d=exp(TerriLOUmed)
 
@@ -409,7 +410,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 
 TerriETHhigh= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriETHhigh
 a=exp(TerriETHhigh)
 
@@ -417,7 +418,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 
 TerriUUShigh= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriUUShigh
 b=exp(TerriUUShigh)
 
@@ -425,7 +426,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS
 
 TerriPOHhigh= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriPOHhigh
 c=exp(TerriPOHhigh)
 
@@ -433,7 +434,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS
 
 TerriLOUhigh= -0.38 - 0.97*year - 0.16*Abuild + 0.24*Aroad + 0.07*Astream + 0.30*Ariver + 0.56*agri5 +1.48*LOU+
   1.99*POH + 1.47*UUS - 0.13*((NeoPrior-0.069)/(2*0.115447)) + 0.14*temp - 0.05*prec + 0.03*year*NeoPrior + 0.08*temp*year - 
-  0.15*prec*year
+  0.15*prec*year+ mean(dataS$Larea)
 TerriLOUhigh
 d=exp(TerriLOUhigh)
 
@@ -484,7 +485,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 #luottamusvälin ala-arvo
 confETHlow= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 confETHlow
 a=exp(confETHlow)
 
@@ -492,7 +493,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 
 confUUSlow= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 confUUSlow
 b=exp(confUUSlow)
 
@@ -500,7 +501,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS
 
 confPOHlow= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 confPOHlow
 c=exp(confPOHlow)
 
@@ -508,7 +509,7 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS
 
 confLOUlow= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 confLOUlow
 d=exp(confLOUlow)
 
@@ -522,28 +523,28 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 #luottamusvälin ala-arvo
 confETHmed= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 a=exp(confETHmed)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=1;NeoPrior=0.5
 
 confUUSmed= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 b=exp(confUUSmed)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS=0;NeoPrior=0.5
 
 confPOHmed= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 c=exp(confPOHmed)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS=0;NeoPrior=0.5
 
 confLOUmed= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 d=exp(confLOUmed)
 
 
@@ -556,28 +557,28 @@ year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS
 #luottamusvälin ala-arvo
 confETHhigh= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 a=exp(confETHhigh)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=1;NeoPrior=0.9
 
 confUUShigh= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 b=exp(confUUShigh)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS=0;NeoPrior=0.9
 
 confPOHhigh= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 c=exp(confPOHhigh)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS=0;NeoPrior=0.9
 
 confLOUhigh= -0.99 - 1.22*year - 0.48*Abuild - 0.07*Aroad - 0.19*Astream + 0.06*Ariver + 0.27*agri5 +0.79*LOU+
   1.22*POH + 0.80*UUS - 0.25*((NeoPrior-0.069)/(2*0.115447)) + 0.05*temp - 0.14*prec - 0.24*year*NeoPrior - 0.11*temp*year - 
-  0.31*prec*year
+  0.31*prec*year+ mean(dataS$Larea)
 d=exp(confLOUhigh)
 
 
@@ -620,7 +621,7 @@ ala95
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=0;NeoPrior=0.1
 
 confETHlow= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 confETHlow
 a=exp(confETHlow)
 a
@@ -628,7 +629,7 @@ a
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=1;NeoPrior=0.1
 
 confUUSlow=  0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 confUUSlow
 b=exp(confUUSlow)
 b
@@ -637,7 +638,7 @@ b
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS=0;NeoPrior=0.1
 
 confPOHlow=  0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 confPOHlow
 c=exp(confPOHlow)
 
@@ -645,7 +646,7 @@ c=exp(confPOHlow)
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS=0;NeoPrior=0.1
 
 confLOUlow=  0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 confLOUlow
 d=exp(confLOUlow)
 
@@ -657,25 +658,25 @@ confupper0.1
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=0;NeoPrior=0.5
 
 confETHmed= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 a=exp(confETHmed)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=1;NeoPrior=0.5
 
 confUUSmed= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 b=exp(confUUSmed)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS=0;NeoPrior=0.5
 
 confPOHmed= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 c=exp(confPOHmed)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS=0;NeoPrior=0.5
 
 confLOUmed= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 d=exp(confLOUmed)
 
 
@@ -686,25 +687,25 @@ confupper0.5
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=0;NeoPrior=0.9
 
 confETHhigh= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 a=exp(confETHhigh)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=0;UUS=1;NeoPrior=0.9
 
 confUUShigh= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 b=exp(confUUShigh)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=0;POH=1;UUS=0;NeoPrior=0.9
 
 confPOHhigh= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 c=exp(confPOHhigh)
 
 year=0;Abuild=0;Aroad=0;Astream=0;Ariver=0;agri5=0;temp=0;prec=0;LOU=1;POH=0;UUS=0;NeoPrior=0.9
 
 confLOUhigh= 0.23 - 0.71*year +0.17*Abuild +0.55*Aroad +0.33*Astream + 0.54*Ariver + 0.84*agri5 +2.17*LOU+
-  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year
+  2.76*POH + 2.14*UUS - 0.01*((NeoPrior-0.069)/(2*0.115447)) + 0.23*temp +0.04*prec +0.29*year*NeoPrior +0.28*temp*year +0.01*prec*year+ mean(dataS$Larea)
 d=exp(confLOUhigh)
 
 confupper0.9=cbind(a,b,c,d)
@@ -774,7 +775,7 @@ ggplot(data=ennusteet, aes(x=kasit, y=enn)) +
 
 HUOM!
 
-*Käsin laskettaessa ennusteet pystyy laskemaan conditional average -estimaateilla (predict funktiolla on pakko käyttää full average -estimaatteja).  
+*Käsin laskettaessa ennusteet pystyy laskemaan conditional average -estimaateilla (predict funktiolla on pakko käyttää full average -estimaatteja). Tosin luettuani tämän [vastauksen ](https://stackoverflow.com/questions/53055050/predicted-values-with-mumin-throwing-error-when-full-false), en olekaan enää niin varma siitä, kumpia arvoja ennusteiden tekemisessä pitäisi käyttää.
 
 *Käsin laskiessa ennusteissa ei huomioida offsettia. Predict-funktio ynnää ennusteeseen myös offsetin (jos se on mallissa mukana offset-muuttujana, ei määreenä).  
 
@@ -847,6 +848,26 @@ Parhaimman mallit etsintä
 #sen summarya tutkailemalla voi huomata jo nyt, jos malli olisi ihan päin honkia.
 summary(M9)
 
+#tarkistetaan ettei globaalimalli ole ylidispersoitunut
+E2 <- resid(M9, type = "pearson")
+N  <- nrow(dataS)
+p  <- 23 + 3  #2 sigmas and 1 size/k/theta NB parameter
+sum(E2^2) / (N - p)
+#globaalimalli on hieman alidispersoitunut, 0.74, onko tämä ongelma?
+
+#How good is the model performing?
+F9 <- fitted(M9)
+par(mfrow = c(1,1), cex.lab = 1.5, mar = c(5,5,2,2))
+plot(x = dataS$terri,
+     y = F9,
+     xlab = "Fitted values (with re)",
+     ylab = "Number of territories",
+     xlim = c(0,15),
+     ylim = c(0,15))
+abline(h = 0, lty = 2) 
+cor(dataS$terri, F9)
+
+
 output<-model.sel(M1,M2,M3,M4,M5,M6,M7,M8,M9)
 output
 
@@ -909,7 +930,7 @@ ggplot(data= coefs, aes(coefficient, Estimate,group=signi)) +
 
 ```{r}
 #predictions
-newdata <- expand.grid(NeoPrior= with(dataS, seq(0.1, 0.9, length.out=3)),
+newdata <- expand.grid(NeoPrior= with(dataS, c(0.13, 1.85, 3.58)),
                        year = mean(dataS$year),
                        Abuild = mean(dataS$Abuild),
                        Aroad = mean(dataS$Aroad),
@@ -933,6 +954,8 @@ newdata$fitX <-exp(newdata$fit)
 newdata$SEX<-exp(newdata$SE)
 newdata$uprX=exp(newdata$upr)
 newdata$lwrX=  exp(newdata$lwr)
+
+newdata
 ``` 
 
 ## Kuvaaja ennusteille + luottamusvälit
@@ -940,7 +963,7 @@ newdata$lwrX=  exp(newdata$lwr)
 ```{r}
 newdata$region <- factor(newdata$region, levels = c('POH', 'UUS', 'LOU', 'ETH'))
 newdata$NeoPrior=as.character(newdata$NeoPrior)
-newdata$NeoPrior=revalue(newdata$NeoPrior,c("0.1"="low","0.5"="med","0.9"="high"))
+newdata$NeoPrior=revalue(newdata$NeoPrior,c("0.13"="low","1.85"="med","3.58"="high"))
 newdata$NeoPrior <- factor(newdata$NeoPrior, levels = c('low', 'med', 'high'))
 
 ggplot(newdata, aes(x=NeoPrior, y=fitX, fill=region)) +
@@ -950,12 +973,11 @@ ggplot(newdata, aes(x=NeoPrior, y=fitX, fill=region)) +
 
 HUOM!
 
-Predict-funktio laskee ennusteet hieman erilailla kuin käsin laskettaessa. Katso funktiosta lisää (täältä)[https://rdrr.io/cran/MuMIn/man/predict.averaging.html]. Funktio käyttää full average estimaatteja ja laskee ennusteet jokaisesta jatkoon valitusta mallista erikseen. Tällöin NeoPrior saa arvon nolla joissain malleissa (missä se ei siis esiinny muuttujana ja on täten vähän pienempi vaikutukseltaan).
+Predict-funktio laskee ennusteet hieman erilailla kuin käsin laskettaessa. Katso funktiosta lisää [täältä](https://rdrr.io/cran/MuMIn/man/predict.averaging.html). Funktio käyttää full average estimaatteja ja laskee ennusteet jokaisesta jatkoon valitusta mallista erikseen. Tällöin NeoPrior saa arvon nolla joissain malleissa (missä se ei siis esiinny muuttujana ja on täten vähän pienempi vaikutukseltaan).
 
 Ennusteet lasketaan siis eri estimaateilla kuin mille aiemmin piirsin kuvaajia ja joihin perustan arvioni muuttujien merkityksestä. Onko tässä suuri ristiriita? Ongelma ratkeaisi, jos predict-funktio osaisi tehdä ennusteita conditional average estimaateista.
 
 
-Loppupäätelmäni: valitsisin käsintehdyt ennusteet. Ainoa asia, joka niissä pohdituttaa on tuo 95 % luottamusvälien laveus ja offsetin puuttuminen. Osaan laskea käsintehdyille ennusteille vain yksittäisen ennusteen luottamusvälit, en ennusteen keskiarvon luottamusväliä. Pinta-alan vaikutus ei ole mukana ennusteissa.
 
 
 #Mallit ilman interaktioita
